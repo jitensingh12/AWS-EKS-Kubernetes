@@ -1,6 +1,10 @@
+Note: We have already started EKS cluster in AWS.
+
 EFS-CSI-DRIVER ADDON.
 
 curl -S https://raw.githubusercontent.com/kubernetes-sigs/aws-efs-csi-driver/master/docs/iam-policy-example.json -o efs-iam-policy.json
+
+Create an IAM Policy 
 
 aws iam create-policy \
   --policy-name AmazonEKS_EFS_CSI_Driver_Policy \
@@ -33,7 +37,7 @@ eksctl create iamserviceaccount \
   --attach-policy-arn arn:aws:iam::707318434536:policy/AmazonEKS_EFS_CSI_Driver_Policy \
   --approve
 
-Get the role info:
+Get the role info using below command. That is being used while creating EFS Addon.
 
 aws iam get-role \
   --role-name $(kubectl get sa efs-csi-controller-sa -n kube-system -o jsonpath="{.metadata.annotations['eks\.amazonaws\.com/role-arn']}" | awk -F'/' '{print $NF}') \
@@ -71,7 +75,8 @@ kubectl describe pod pod-name -n logging | grep -E "AWS_ROLE_ARN|AWS_WEB_IDENTIT
 
 
 Process Complteted
-==========================================
+=================================================================
+
 
 kubectl get sa fluent-bit-sa -n logging -o yaml
 
@@ -81,7 +86,6 @@ tolerations:
   key: node.cloudprovider.kubernetes.io/uninitialized
   operator: Equal
   value: "true"
-
 
 
 tomcat -
