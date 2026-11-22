@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tomcat-app
+  namespace: logging
+  labels:
+    app: tomcat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tomcat
+  template:
+    metadata:
+      labels:
+        app: tomcat
+    spec:
+      securityContext:
+        fsGroup: 2000
+        fsGroupChangePolicy: "OnRootMismatch"
+      containers:
+        - name: tomcat
+          image: jtsingh12/tomcat11:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          volumeMounts:
+            # Mount EFS directly into Tomcat's default logging path
+            - name: efs-volume
+              mountPath: /usr/local/tomcat/logs
+              subPath: var/log/tomcat
+      tolerations:
+      - operator: Exists
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        operator: Equal
+        value: "true"         
+      volumes:
+        - name: efs-volume
+          persistentVolumeClaim:
+            claimName: efs-tomcat-pvc

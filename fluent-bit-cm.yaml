@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: logging
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush                     1
+        Daemon                    Off
+        Log_Level                 debug
+        # Parsers_File              parsers.conf
+
+        # Local disk buffering for backpressure protection
+        storage.path              /var/log/fluent-bit/buffer
+        storage.sync              normal
+        storage.checksum          off
+        storage.backlog.mem_limit 10M
+        storage.max_chunks_up     128
+
+        # Health & Prometheus endpoint
+        HTTP_Server               On
+        HTTP_Listen               0.0.0.0
+        HTTP_Port                 2020
+        Health_Check              On
+
+    # -------------------------------------------------------------
+    # INPUT: Read Tomcat logs mounted from EFS
+    # -------------------------------------------------------------
+    [INPUT]
+        Name                      tail
+        Tag                       tomcat.*
+        # Captures catalina.out, localhost_access_log, etc.
+        Path                      /usr/local/tomcat/logs/*
+        #Path_On_Missing           stat_only
+        Read_from_Head            On
+        #Path_Key                  log_file
+        # Always store the SQLite DB on local storage, not EFS
+        DB                        /var/log/fluent-bit/buffer/tomcat.db
+        DB.sync                   normal
+        Buffer_Chunk_Size         5k
+        Buffer_Max_Size           256k
+        Skip_Long_Lines           Off
+        Mem_Buf_Limit             20MB
+        storage.type              filesystem
+
+    # -------------------------------------------------------------
+    # OUTPUT: Stream to Amazon CloudWatch
+    # -------------------------------------------------------------
+    [OUTPUT]
+        Name                      cloudwatch_logs
+        Match                     *
+        region                    us-east-1
+        log_group_name            k8stomcatlogs
+        log_stream_prefix         tomcat-
+        auto_create_group         On
+        log_retention_days        30
+        Retry_Limit               5
+        workers                   2
+        auto_retry_requests       true
+        net.connect_timeout       10
+        net.keepalive_idle_timeout 30

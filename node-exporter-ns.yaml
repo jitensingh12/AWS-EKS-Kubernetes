@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: node-exporter-ns
+  labels:
+    app.kubernetes.io/name: node-exporter-ns

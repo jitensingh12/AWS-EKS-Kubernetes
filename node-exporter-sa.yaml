@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: node-exporter-sa
+  namespace: node-exporter-ns
+  labels:
+    app.kubernetes.io/name: node-exporter-ns
+    app.kubernetes.io/component: exporter

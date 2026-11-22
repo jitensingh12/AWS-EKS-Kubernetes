@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fluent-bit-efs-forwarder
+  namespace: logging
+  labels:
+    app: fluent-bit-efs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fluent-bit-efs
+  template:
+    metadata:
+      labels:
+        app: fluent-bit-efs
+    spec:
+      serviceAccountName: fluent-bit-sa
+      securityContext:
+        fsGroup: 2000
+        fsGroupChangePolicy: "OnRootMismatch"
+      containers:
+        - name: aws-fluent-bit
+          image: public.ecr.aws/aws-observability/aws-for-fluent-bit:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 2020
+              name: metrics
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            # Fluent Bit configuration
+            - name: config-volume
+              mountPath: /fluent-bit/etc/fluent-bit.conf
+              subPath: fluent-bit.conf
+
+            # High-speed local buffer & SQLite DB storage
+            - name: local-buffer-volume
+              mountPath: /var/log/fluent-bit/buffer
+
+            # EFS tomcat directory: FS:/var/log/tomcat/
+            - name: efs-storage
+              mountPath: /usr/local/tomcat/logs
+              subPath: var/log/tomcat
+              readOnly: true
+
+            # EFS systemlogs directory: FS:/var/log/systemlogs/
+            #- name: efs-storage
+            #  mountPath: /mnt/efs/systemlogs
+            #  subPath: var/log/systemlogs
+            #  readOnly: true
+      tolerations:
+      - operator: Exists
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        operator: Equal
+        value: "true"          
+      volumes:
+        - name: config-volume
+          configMap:
+            name: fluent-bit-config
+
+        # Local ephemeral storage for buffer chunks and read cursors
+        - name: local-buffer-volume
+          emptyDir: {}
+
+        # The shared AWS EFS volume
+        - name: efs-storage
+          persistentVolumeClaim:
+            claimName: efs-tomcat-pvc
