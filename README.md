@@ -1,5 +1,5 @@
 # AWS-EKS-Kubernetes
-**AWS EKS Advance demo manifests** Note EKS cluster deployed on AWS.
+**AWS EKS Advance demo manifests** Note EKS cluster deployed on AWS. ENS Cluster - 1.35
 
 This is basically used for AWS EKS Labs (AWS EKS Cluster) - example with **AWS EFS Setup, AWS OIDC configuration , Service Account, IAM policy, Namespace**  etc..
 
